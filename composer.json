@@ -1,0 +1,21 @@
+{
+    "name": "magmodules/magento2-bewustbezorgd",
+    "description": "BewustBezorgd integration for Magento 2",
+    "type": "magento2-module",
+    "version": "1.1.0",
+    "license": "BSD-2-Clause",
+    "homepage": "https://github.com/magmodules/magento2-bewustbezorgd",
+    "require": {
+        "magento/framework": ">=100.1.0",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Thuiswinkel\\BewustBezorgd\\": ""
+        }
+    }
+}

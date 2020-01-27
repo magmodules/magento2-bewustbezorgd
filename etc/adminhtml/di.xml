@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<!--
+  ~ Copyright © Thuiswinkel.org. All rights reserved.
+  ~ See COPYING.txt for license details.
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Catalog\Ui\DataProvider\CatalogEavValidationRules">
+        <plugin name="thuiswinkel_bewustbezorgd_dimensions_attributes_additional_validation_plugin"
+                type="Thuiswinkel\BewustBezorgd\Plugin\Magento\Catalog\Ui\DataProvider\CatalogEavValidationRules"
+                sortOrder="10"
+                disabled="false"
+        />
+    </type>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <plugin name="thuiswinkel_bewustbezorgd_add_emissin_field_to_order_grid_plugin"
+                type="Thuiswinkel\BewustBezorgd\Plugin\Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory"
+                sortOrder="10"
+                disabled="false"
+        />
+    </type>
+</config>

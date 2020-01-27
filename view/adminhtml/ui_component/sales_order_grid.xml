@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright © Thuiswinkel.org. All rights reserved.
+  ~ See COPYING.txt for license details.
+  -->
+
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <columns name="sales_order_columns">
+        <column name="emission" class="Thuiswinkel\BewustBezorgd\Ui\Component\Listing\Column\Emission">
+            <settings>
+                <filter>textRange</filter>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+                <label translate="true">CO2-emission g/km</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

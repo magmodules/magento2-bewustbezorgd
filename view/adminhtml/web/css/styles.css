@@ -1,0 +1,77 @@
+/*
+ * Copyright Â© 2019 Thuiswinkel.org. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+.admin__page-nav-item.item.bewust_bezorgd a {
+    color: #3a2425;
+    font-weight: bold;
+}
+
+.admin__page-nav-item.item.bewust_bezorgd a:after {
+    content: "";
+    width: 35px;
+    height: 30px;
+    background-image: url(../icons/logo.svg);
+    background-position: 0px -5px;
+    background-size: 35px;
+    float: left;
+    margin-top: -5px;
+    margin-right: 10px;
+}
+
+.mm-block-bewust_bezorgd {
+    border: 1px solid #e3e3e3;
+    margin-bottom: 10px;
+    color: white;
+    padding: 20px 30px 30px 50px;
+    font-size: 13px;
+    border-radius: 4px;
+    background: #f1f1f1;
+    background-image: url(../icons/Bewust_Bezorgd_Horizontaal_RGB.png);
+    background-repeat: no-repeat;
+    background-size: 280px;
+    background-position-x: 20px;
+    background-position-y: 50px;
+    height: 100%;
+    display: grid;
+}
+
+.mm-block-bewust_bezorgd .phoneline {
+    color: #1f1f1f;
+    margin-top: 10px;
+    display: block;
+}
+
+.mm-block-bewust_bezorgd .phoneline a {
+    color: #55469c;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.mm-block-bewust_bezorgd .phone {
+    color: #00786e;
+    font-weight: bold;
+}
+
+.mm-block-bewust_bezorgd p strong {
+    font-size: 18px;
+    /* line-height: 10px; */
+    font-weight: 400;
+    margin-top: 3px;
+    color: black;
+    display: grid;
+    margin-bottom: -10px;
+    font-weight: bold;
+}
+
+.mm-block-bewust_bezorgd p {
+    line-height: 1.9em;
+    max-width: 75%;
+    margin: 0px;
+    float: left;
+    color: black;
+    font-family: inherit;
+    font-size: 14px;
+    margin-left: 300px;
+}

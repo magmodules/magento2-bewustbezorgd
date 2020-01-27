@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright © Thuiswinkel.org. All rights reserved.
+  ~ See COPYING.txt for license details.
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <bewust_bezorgd>
+            <api_settings>
+                <gateway_url>https://emission.azurewebsites.net</gateway_url>
+                <allowed_countries>NL</allowed_countries>
+            </api_settings>
+            <display_settings>
+                <can_show_logo>1</can_show_logo>
+            </display_settings>
+            <order_settings>
+                <save_to_order>1</save_to_order>
+            </order_settings>
+            <attributes>
+                <attribute_length>ts_dimensions_length</attribute_length>
+                <attribute_width>ts_dimensions_width</attribute_width>
+                <attribute_height>ts_dimensions_height</attribute_height>
+            </attributes>
+            <default_values>
+                <default_weight>2</default_weight>
+                <default_volume>15</default_volume>
+            </default_values>
+        </bewust_bezorgd>
+    </default>
+</config>
