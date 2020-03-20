@@ -11,6 +11,10 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Directory\Helper\Data as DirectoryHelper;
+use Magento\Framework\App\State as AppState;
+use Magento\Quote\Model\Quote;
+use Thuiswinkel\BewustBezorgd\Logger\DataLoggerInterface
+    as DataLoggerInterface;
 
 /**
  * Class Config
@@ -50,23 +54,46 @@ class Config
     protected $storeId;
 
     /**
+     * @var AppState
+     */
+    protected $appState;
+
+    /**
+     * @var Quote
+     */
+    protected $quote;
+
+    /**
+     * @var DataLoggerInterface
+     */
+    private $dataLogger;
+
+    /**
      * Config constructor.
-     *
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
      * @param DirectoryHelper $directoryHelper
      * @param SerializerInterface $serializer
+     * @param AppState $appState
+     * @param Quote $quote
+     * @param DataLoggerInterface $dataLogger
      */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         StoreManagerInterface $storeManager,
         DirectoryHelper $directoryHelper,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        AppState $appState,
+        Quote $quote,
+        DataLoggerInterface $dataLogger
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
         $this->directoryHelper = $directoryHelper;
         $this->serializer = $serializer;
+        $this->appState = $appState;
+        $this->quote = $quote;
+        $this->dataLogger = $dataLogger;
     }
 
     /**
@@ -82,6 +109,40 @@ class Config
     }
 
     /**
+     * Validate parameters for correct mass calculation
+     *
+     * @return bool
+     */
+    public function validateMass()
+    {
+        foreach ($this->quote->getAllItems() as $quoteItem) {
+            if ($quoteItem->getProductType() != 'simple') {
+                continue;
+            }
+            $dimensionAttributes = $this->getConfigDimensionsAttributes();
+            $length = $quoteItem->getProduct()
+                ->getData($dimensionAttributes['attribute_length']);
+            $width = $quoteItem->getProduct()
+                ->getData($dimensionAttributes['attribute_width']);
+            $height = $quoteItem->getProduct()
+                ->getData($dimensionAttributes['attribute_height']);
+            if ($length === null
+                || $width === null
+                || $height === null
+            ){
+                return false;
+            } elseif ($length == 0
+                || $width == 0
+                || $height == 0
+            ) {
+                $this->dataLogger->add('data', "Product volume is null");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Check if module is enabled
      *
      * @return bool
@@ -89,6 +150,11 @@ class Config
      */
     public function isEnabled()
     {
+        if ($this->appState->getAreaCode() == 'frontend') {
+            if (!$this->validateMass()) {
+                return false;
+            }
+        }
         return $this->scopeConfig->isSetFlag(
             self::CONFIG_XML_PATH_ACTIVE,
             ScopeInterface::SCOPE_STORE,
