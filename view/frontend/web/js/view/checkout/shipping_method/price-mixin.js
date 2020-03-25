@@ -56,7 +56,7 @@ define([
     }
 
     function appendMethodIcons(viewModel, methodTable) {
-        if (viewModel.rates().length) {
+        if (viewModel.rates().length > 1) {
             _.each(viewModel.rates(), function (method) {
                 // Can't use ID selection, must use attr selection, because methods may have special chars
                 var row = findMethodRow(methodTable, method);
