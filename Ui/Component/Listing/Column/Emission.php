@@ -41,7 +41,7 @@ class Emission extends Column
      */
     protected function prepareItem(array $item)
     {
-        if (is_numeric($item[$this->getData('name')]) && $item[$this->getData('name')] > 0) {
+        if (isset($item[$this->getData('name')]) && is_numeric($item[$this->getData('name')]) && $item[$this->getData('name')] > 0) {
             return '<div style="text-align: center;">' . (int) $item[$this->getData('name')] . '</div>';
         }
 
