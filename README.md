@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://bewustbezorgd.thuiswinkel.org/images/logo-1.svg" width="128" height="128"/>
+  <img src="https://bewustbezorgd.org/wp-content/themes/theme-bb/img/logo/min/logo.svg" width="400"/>
 </p>
 <h1 align="center">Bewust Bezorgd for Magento 2.x</h1>
 
