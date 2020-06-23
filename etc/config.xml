@@ -8,6 +8,9 @@
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <bewust_bezorgd>
+            <general>
+                <version>v1.1.2</version>
+            </general>
             <api_settings>
                 <gateway_url>https://emission.azurewebsites.net</gateway_url>
                 <allowed_countries>NL</allowed_countries>
