@@ -3,70 +3,55 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Model;
+namespace Thuiswinkel\BewustBezorgd\Model\Config;
 
-use Magento\Framework\Serialize\SerializerInterface;
-use Magento\Store\Model\ScopeInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Magento\Directory\Helper\Data as DirectoryHelper;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\State as AppState;
+use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Quote\Model\Quote;
-use Thuiswinkel\BewustBezorgd\Logger\DataLoggerInterface
-    as DataLoggerInterface;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use Thuiswinkel\BewustBezorgd\Api\Log\RepositoryInterface as LogRepositoryInterface;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 /**
- * Class Config
+ * Config repo class
  */
-class Config
+class Repository implements ConfigRepositoryInterface
 {
-    /**#@+
-     * System configuration path constants
-     */
-    const CONFIG_XML_PATH_ACTIVE = 'bewust_bezorgd/general/active';
-    const CONFIG_XML_PATH_GATEWAY_URL = 'bewust_bezorgd/api_settings/gateway_url';
-    const CONFIG_XML_PATH_SHOP_ID = 'bewust_bezorgd/api_settings/api_shopid';
-    const CONFIG_XML_PATH_PASSWORD = 'bewust_bezorgd/api_settings/api_password';
-    const CONFIG_XML_PATH_DEBUG_ENABLED = 'bewust_bezorgd/api_settings/debug';
-    const CONFIG_XML_PATH_ALLOWED_COUNTRIES = 'bewust_bezorgd/api_settings/allowed_countries';
-    const CONFIG_XML_PATH_CAN_SHOW_LOGO = 'bewust_bezorgd/display_settings/can_show_logo';
-    const CONFIG_XML_PATH_SAVE_TO_ORDER = 'bewust_bezorgd/order_settings/save_to_order';
-    const CONFIG_XML_PATH_DEFAULT_WEIGHT = 'bewust_bezorgd/default_values/default_weight';
-    const CONFIG_XML_PATH_DEFAULT_VOLUME = 'bewust_bezorgd/default_values/default_volume';
-    const CONFIG_XML_PATH_SERVICE_TYPES = 'bewust_bezorgd/data_mapping/service_type_mapping';
-    const CONFIG_XML_PATH_GROUP_ATTRIBUTES = 'bewust_bezorgd/attributes';
-    /**#@-*/
 
     /** @var ScopeConfigInterface */
-    protected $scopeConfig;
+    private $scopeConfig;
 
     /** @var StoreManagerInterface */
-    protected $storeManager;
+    private $storeManager;
 
     /** @var DirectoryHelper */
-    protected $directoryHelper;
+    private $directoryHelper;
 
     /** @var SerializerInterface */
-    protected $serializer;
+    private $serializer;
 
     /** @var int */
-    protected $storeId;
+    private $storeId;
 
     /**
      * @var AppState
      */
-    protected $appState;
+    private $appState;
 
     /**
      * @var Quote
      */
-    protected $quote;
+    private $quote;
 
     /**
-     * @var DataLoggerInterface
+     * @var LogRepositoryInterface
      */
-    private $dataLogger;
+    private $logRepository;
 
     /**
      * Config constructor.
@@ -76,7 +61,7 @@ class Config
      * @param SerializerInterface $serializer
      * @param AppState $appState
      * @param Quote $quote
-     * @param DataLoggerInterface $dataLogger
+     * @param LogRepositoryInterface $logRepository
      */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
@@ -85,7 +70,7 @@ class Config
         SerializerInterface $serializer,
         AppState $appState,
         Quote $quote,
-        DataLoggerInterface $dataLogger
+        LogRepositoryInterface $logRepository
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
@@ -93,14 +78,11 @@ class Config
         $this->serializer = $serializer;
         $this->appState = $appState;
         $this->quote = $quote;
-        $this->dataLogger = $dataLogger;
+        $this->logRepository = $logRepository;
     }
 
     /**
-     * Set a specified store ID value
-     *
-     * @param int $store
-     * @return $this
+     * @inheritDoc
      */
     public function setStoreId($store)
     {
@@ -109,9 +91,7 @@ class Config
     }
 
     /**
-     * Validate parameters for correct mass calculation
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function validateMass()
     {
@@ -129,13 +109,13 @@ class Config
             if ($length === null
                 || $width === null
                 || $height === null
-            ){
+            ) {
                 return false;
             } elseif ($length == 0
                 || $width == 0
                 || $height == 0
             ) {
-                $this->dataLogger->add('data', "Product volume is null");
+                $this->logRepository->addDataLog('data', "Product volume is null");
                 return false;
             }
         }
@@ -143,10 +123,7 @@ class Config
     }
 
     /**
-     * Check if module is enabled
-     *
-     * @return bool
-     * @api
+     * @inheritDoc
      */
     public function isEnabled()
     {
@@ -163,9 +140,7 @@ class Config
     }
 
     /**
-     * Retrieves configuration of group "Attributes"
-     *
-     * @return array
+     * @inheritDoc
      */
     public function getConfigDimensionsAttributes()
     {
@@ -177,9 +152,7 @@ class Config
     }
 
     /**
-     * Retrieves API gateway URL
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getConfigGatewayUrl()
     {
@@ -191,9 +164,7 @@ class Config
     }
 
     /**
-     * Retrieves API Shop ID
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getConfigApiShopId()
     {
@@ -205,9 +176,7 @@ class Config
     }
 
     /**
-     * Retrieves API Password
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getConfigApiPassword()
     {
@@ -219,9 +188,7 @@ class Config
     }
 
     /**
-     * Retrieves default weight from configuration
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getDefaultWeight()
     {
@@ -233,9 +200,7 @@ class Config
     }
 
     /**
-     * Retrieves default volume from configuration
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getDefaultVolume()
     {
@@ -247,9 +212,7 @@ class Config
     }
 
     /**
-     * Retrieves allowed countries from configuration
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getAllowedCountries()
     {
@@ -261,9 +224,7 @@ class Config
     }
 
     /**
-     * Retrieves service types from configuration
-     *
-     * @return array
+     * @inheritDoc
      */
     public function getServiceTypes()
     {
@@ -277,9 +238,7 @@ class Config
     }
 
     /**
-     * Retrieves setting "Show BewustBezorgd Icon on Shippingmethods" from configuration
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function canShowLogo()
     {
@@ -291,9 +250,7 @@ class Config
     }
 
     /**
-     * Retrieves save to order configuration setting
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function saveToOrder()
     {
@@ -305,9 +262,7 @@ class Config
     }
 
     /**
-     * Retrieves dimensions unit according to selected weight unit
-     *
-     * @return string
+     * @inheritDoc
      */
     public function getDimensionsUnit()
     {
@@ -320,9 +275,7 @@ class Config
     }
 
     /**
-     * Check if debug mode is enabled
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function isDebugMode()
     {

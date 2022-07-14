@@ -3,60 +3,83 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Model\Emission;
+namespace Thuiswinkel\BewustBezorgd\Service;
 
-use RuntimeException;
-use Throwable;
-use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Quote\Api\Data\CartInterface;
-use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Checkout\Model\Session;
 use Magento\Directory\Helper\Data as DirectoryHelper;
-use Magento\Framework\Filesystem;
+use Magento\Eav\Model\Config as EavConfig;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\StoreManagerInterface;
-use Magento\Shipping\Model\Config as ShippingConfig;
-use Magento\Store\Model\ScopeInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Quote\Api\Data\ShippingMethodExtensionFactory;
-use Magento\Quote\Model\Cart\ShippingMethod;
-use Magento\Quote\Api\Data\ShippingMethodExtensionInterface;
-use Magento\Checkout\Model\Session;
-use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Filesystem;
 use Magento\Framework\Filter\FilterManager;
 use Magento\Framework\Filter\TruncateFilter\Result;
-use Thuiswinkel\BewustBezorgd\Helper\Data as DataHelper;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
-use Thuiswinkel\BewustBezorgd\Model\Exception\ApiAuthenticationFailedException;
+use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Quote\Api\Data\CartInterface;
+use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Quote\Api\Data\ShippingMethodExtensionFactory;
+use Magento\Quote\Api\Data\ShippingMethodExtensionInterface;
+use Magento\Quote\Model\Cart\ShippingMethod;
+use Magento\Shipping\Model\Config as ShippingConfig;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use RuntimeException;
+use Throwable;
+use Thuiswinkel\BewustBezorgd\Api\Log\RepositoryInterface as LogRepository;
+use Thuiswinkel\BewustBezorgd\Service\ApiConnection;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiConfigurationException;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiCredentialsException;
 use Thuiswinkel\BewustBezorgd\Model\Product\Attribute\Source\BewustbezorgdLegs as BewustbezorgdLegsAttributeSource;
-use Thuiswinkel\BewustBezorgd\Model\ApiConnection;
-use Thuiswinkel\BewustBezorgd\Model\Converter;
-use Thuiswinkel\BewustBezorgd\Model\ArrayCalculatorInterface;
 
 /**
- * Class Collector
+ * Emission collector service class
  */
-class Collector implements CollectorInterface
+class CollectEmission
 {
+
     /**#@+
      * Constants
      */
-    const CALCULATED_FIELD_KEYS = [
+    private const CALCULATED_FIELD_KEYS = [
         'two-legs'      => 'Weight',
         'three-legs'    => 'Mass'
     ];
+    private const ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS = 'bewustbezorgd_legs';
     /**#@-*/
+
+    /**
+     * Map for weight converting
+     *
+     * @var array
+     */
+    private const WEIGHT_CONVERT_MAP = [
+        'lbs'   => 453.59237,
+        'kgs'   => 1000
+    ];
+
+    /**
+     * Map for dimension converting
+     *
+     * @var array
+     */
+    private const VOLUME_CONVERT_MAP = [
+        'in'   => 0.0163871,
+        'cm'   => 0.001
+    ];
 
     /**
      * Headers for CSV files
      *
      * @var array
      */
-    protected $csvHeader = [
+    private const CSV_HEADER = [
         'two-legs'      => [
             'postcode_from' => 'From Postal Code',
             'country_from'  => 'From Country',
@@ -80,112 +103,105 @@ class Collector implements CollectorInterface
      */
     private $truncateResult = null;
 
-    /** @var DataHelper */
-    private $dataHelper;
-
     /** @var ConfigModel */
     private $configModel;
 
     /** @var DirectoryHelper */
-    protected $directoryHelper;
-
-    /** @var Filesystem */
-    private $filesystem;
+    private $directoryHelper;
 
     /** @var ApiConnection */
     private $apiConnection;
 
-    /** @var Converter */
-    protected $converter;
-
     /** @var ShippingMethodExtensionFactory */
-    protected $extensionFactory;
+    private $extensionFactory;
 
     /** @var Session */
-    protected $session;
+    private $session;
 
     /** @var SerializerInterface */
-    protected $serializer;
+    private $serializer;
 
-    /** @var ArrayCalculatorInterface */
-    protected $arrayCalculator;
+    /** @var EavConfig */
+    protected $eavConfig;
 
     /**
      * Store Information Country ID
      *
      * @var string
      */
-    protected $storeCountryId;
+    private $storeCountryId;
 
     /**
      * Store Information Postcode
      *
      * @var string
      */
-    protected $storePostcode;
+    private $storePostcode;
 
     /**
      * Filter manager
      *
      * @var FilterManager
      */
-    protected $filterManager;
+    private $filterManager;
 
     /**
      * Option map for attribute "bewustbezorgdLegs"
      *
      * @var array
      */
-    protected $bewustbezorgdLegsMap;
+    private $bewustbezorgdLegsMap;
 
-    protected $shippingMethodKeys = [];
+    /**
+     * @var LogRepository
+     */
+    private $logRepository;
+
+    /**
+     * @var array
+     */
+    private $shippingMethodKeys = [];
 
     /**
      * Constructor.
      *
-     * @param DataHelper $dataHelper
      * @param ConfigModel $configModel
      * @param DirectoryHelper $directoryHelper
-     * @param Filesystem $filesystem
      * @param ApiConnection $apiConnection
-     * @param Converter $converter
      * @param ShippingMethodExtensionFactory $extensionFactory
      * @param Session $session
      * @param SerializerInterface $serializer
-     * @param ArrayCalculatorInterface $arrayCalculator
      * @param StoreManagerInterface $storeManager
      * @param ScopeConfigInterface $scopeConfig
      * @param FilterManager $filterManager
+     * @param EavConfig $eavConfig
+     * @param LogRepository $logRepository
      * @param BewustbezorgdLegsAttributeSource $bewustbezorgdLegsSource
      * @throws NoSuchEntityException
      */
     public function __construct(
-        DataHelper $dataHelper,
         ConfigModel $configModel,
         DirectoryHelper $directoryHelper,
-        Filesystem $filesystem,
         ApiConnection $apiConnection,
-        Converter $converter,
         ShippingMethodExtensionFactory $extensionFactory,
         Session $session,
         SerializerInterface $serializer,
-        ArrayCalculatorInterface $arrayCalculator,
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         FilterManager $filterManager,
+        EavConfig $eavConfig,
+        LogRepository $logRepository,
         BewustbezorgdLegsAttributeSource $bewustbezorgdLegsSource
     ) {
-        $this->dataHelper = $dataHelper;
         $this->configModel = $configModel;
         $this->directoryHelper = $directoryHelper;
-        $this->filesystem = $filesystem;
         $this->apiConnection = $apiConnection;
-        $this->converter = $converter;
         $this->extensionFactory = $extensionFactory;
         $this->session = $session;
         $this->serializer = $serializer;
-        $this->arrayCalculator = $arrayCalculator;
         $this->filterManager = $filterManager;
+        $this->eavConfig = $eavConfig;
+        $this->logRepository = $logRepository;
         $this->storeCountryId = $scopeConfig->getValue(
             ShippingConfig::XML_PATH_ORIGIN_COUNTRY_ID,
             ScopeInterface::SCOPE_STORE,
@@ -202,9 +218,17 @@ class Collector implements CollectorInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Emission Collect Method
+     *
+     * @param CartInterface $quote
+     * @param $address
+     * @param array $shippingMethods
+     * @return ShippingMethod[]|array
+     * @throws NoSuchEntityException
+     * @throws FileSystemException
+     * @throws WrongApiConfigurationException
      */
-    public function collect(CartInterface $quote, $address, $shippingMethods)
+    public function execute(CartInterface $quote, $address, $shippingMethods)
     {
         // Check if country in store information is allowed
         if (!in_array($this->storeCountryId, explode(',', $this->configModel->getAllowedCountries()))) {
@@ -242,38 +266,33 @@ class Collector implements CollectorInterface
             $this->shippingMethodKeys[$key] = $collectedMethodCode;
         }
         $efficiency = [];
-
         try {
-            foreach ($requestData as $filename => $requestDatum) {
-                $file = $this->prepareCsv($filename, $suffix, $requestDatum);
-                $data = $this->parseCsv($this->apiConnection->getBulkEmission($file, $filename));
-
+            foreach ($requestData as $endpoint => $requestDatum) {
+                $data = $this->apiConnection->getEmission($requestDatum, $endpoint);
                 foreach ($shippingMethods as $key => $shippingMethod) {
                     $collectedMethodCode = $shippingMethod->getCarrierCode() . '_' . $shippingMethod->getMethodCode();
                     $this->getExtensionAttributes($shippingMethod)
                         ->setMostEfficient(0);
-                    ;
 
                     if (!isset($this->shippingMethodKeys[$key])) {
                         continue;
                     }
-                    $emissionData = array_shift($data);
-
-                    if (null === $emissionData['Service Type']) {
+                    if (!$data) {
                         continue;
                     }
+                    $emissionData = $data;
 
                     if (!isset($emission[$collectedMethodCode])) {
                         $emission[$collectedMethodCode] = [
                             'emission'          => 0,
                             'meters_diesel'     => 0,
                             'meters_gasoline'   => 0,
-                            'service_type'      => $emissionData['Service Type']
+                            'service_type'      => $endpoint
                         ];
                     }
-                    $emission[$collectedMethodCode]['emission'] += $emissionData['Emission'];
-                    $emission[$collectedMethodCode]['meters_diesel'] += $emissionData['Meters Diesel'];
-                    $emission[$collectedMethodCode]['meters_gasoline'] += $emissionData['Meters Gasoline'];
+                    $emission[$collectedMethodCode]['emission'] += $emissionData['emission'];
+                    $emission[$collectedMethodCode]['meters_diesel'] += $emissionData['metersDiesel'];
+                    $emission[$collectedMethodCode]['meters_gasoline'] += $emissionData['metersGasoline'];
                     $efficiency[$key] = [
                         'emission'          => $emission[$collectedMethodCode]['emission'],
                         'shipping_method'   => $shippingMethod
@@ -289,11 +308,13 @@ class Collector implements CollectorInterface
                 $this->getExtensionAttributes($mostEfficient['shipping_method'])
                     ->setMostEfficient(1);
             }
-        // @codingStandardsIgnoreStart
+            // @codingStandardsIgnoreStart
         } catch (WrongApiConfigurationException $exception) {
+            $this->logRepository->addApiLog($exception->getMessage());
         } catch (WrongApiCredentialsException $exception) {
-        } catch (ApiAuthenticationFailedException $exception) {
+            $this->logRepository->addApiLog($exception->getMessage());
         } catch (Throwable $exception) {
+            $this->logRepository->addApiLog($exception->getMessage());
         }
         // @codingStandardsIgnoreEnd
         return $shippingMethods;
@@ -308,7 +329,7 @@ class Collector implements CollectorInterface
      * @return array
      * @throws LocalizedException
      */
-    protected function prepareEmissionData(CartInterface $quote, $address, $serviceType)
+    private function prepareEmissionData(CartInterface $quote, $address, $serviceType)
     {
         $data = [];
         $result = [];
@@ -318,10 +339,43 @@ class Collector implements CollectorInterface
         }
 
         foreach ($data as $endpoint => $items) {
-            $result[$endpoint][] = $this->arrayCalculator->calculateFieldSumByKey(
+            $result[$endpoint][] = $this->calculateFieldSumByKey(
                 $data[$endpoint],
                 self::CALCULATED_FIELD_KEYS[$endpoint]
             );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Calculates sum array field by key
+     *
+     * Input array should be like
+     * [
+     *     ['key1' => 'value1', 'key2' => 'value2', ... 'keyN' => 'valueN'],
+     *     ['key1' => 'value1', 'key2' => 'value2', ... 'keyN' => 'valueN'],
+     *      ...
+     *     ['key1' => 'value1', 'key2' => 'value2', ... 'keyN' => 'valueN']
+     * ]
+     *
+     * Example output array
+     * ['key1' => 'value1', 'calculatedKey' => SUM('value'), ... 'keyN' => 'valueN']
+     *
+     * @param array $array
+     * @param $calculatedKey
+     * @return array
+     */
+    private function calculateFieldSumByKey(array $array, $calculatedKey)
+    {
+        if (!count($array)) {
+            return $array;
+        }
+        $result = array_shift($array);
+
+        while (count($array)) {
+            $item = array_shift($array);
+            $result[$calculatedKey] += $item[$calculatedKey];
         }
 
         return $result;
@@ -336,7 +390,7 @@ class Collector implements CollectorInterface
      * @return array
      * @throws LocalizedException
      */
-    protected function prepareItemData(CartItemInterface $quoteItem, $address, $serviceType)
+    private function prepareItemData(CartItemInterface $quoteItem, $address, $serviceType)
     {
         $bewustbezorgdLegs = $this->getBewustbezorgdLegs($quoteItem);
 
@@ -352,73 +406,14 @@ class Collector implements CollectorInterface
 
         return [
             $itemEndpoint => [[
-                $this->csvHeader[$itemEndpoint]['postcode_from']   => $this->storePostcode,
-                $this->csvHeader[$itemEndpoint]['country_from']    => $this->storeCountryId,
-                $this->csvHeader[$itemEndpoint]['postcode_to']     => $this->truncateString($address->getPostcode()),
-                $this->csvHeader[$itemEndpoint]['country_to']      => $address->getCountryId(),
-                $this->csvHeader[$itemEndpoint]['weight_mass']     => $weightOrVolume,
-                $this->csvHeader[$itemEndpoint]['service_type']    => $serviceType
+                self::CSV_HEADER[$itemEndpoint]['postcode_from']   => $this->storePostcode,
+                self::CSV_HEADER[$itemEndpoint]['country_from']    => $this->storeCountryId,
+                self::CSV_HEADER[$itemEndpoint]['postcode_to']     => $this->truncateString($address->getPostcode()),
+                self::CSV_HEADER[$itemEndpoint]['country_to']      => $address->getCountryId(),
+                self::CSV_HEADER[$itemEndpoint]['weight_mass']     => $weightOrVolume,
+                self::CSV_HEADER[$itemEndpoint]['service_type']    => $serviceType
             ]]
         ];
-    }
-
-    /**
-     * Prepares CSV file to send to Api
-     *
-     * @param $filename
-     * @param $suffix
-     * @param $requestData
-     * @return string
-     * @throws FileSystemException
-     */
-    protected function prepareCsv($filename, $suffix, $requestData)
-    {
-        $directory = $this->filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
-        $tmpDir = $directory->getAbsolutePath('order-emission');
-
-        if (!$directory->create($tmpDir)) {
-            throw new RuntimeException('Failed to create temporary directory');
-        }
-        $file = $tmpDir . '/' . $filename . '-' . $suffix . '.csv';
-        $stream = $directory->openFile($file, 'w+');
-        $stream->lock();
-        $stream->writeCsv($this->csvHeader[$filename], ';');
-
-        foreach ($requestData as $requestDatum) {
-            $stream->writeCsv($requestDatum, ';');
-        }
-        $stream->unlock();
-        $stream->close();
-
-        return $file;
-    }
-
-    /**
-     * CSV parser
-     *
-     * @param $csvData
-     * @return array
-     */
-    protected function parseCsv($csvData)
-    {
-        $csvStrings = explode(PHP_EOL, str_replace("\r\n", "\n", $csvData));
-        $csvStrings = array_filter($csvStrings, function ($csvString) {
-            return !empty($csvString);
-        });
-        $csvKeys = explode(';', array_shift($csvStrings));
-        $data = [];
-
-        while (count($csvStrings)) {
-            $csvData = [];
-            $csvStringAsArray = explode(';', array_shift($csvStrings));
-
-            for ($i = 0, $colsCount = count($csvStringAsArray); $i < $colsCount; $i++) {
-                $csvData[$csvKeys[$i]] = $csvStringAsArray[$i];
-            }
-            $data[] = $csvData;
-        }
-
-        return $data;
     }
 
     /**
@@ -427,7 +422,7 @@ class Collector implements CollectorInterface
      * @param ShippingMethod $shippingMethod
      * @return ShippingMethodExtensionInterface
      */
-    protected function getExtensionAttributes(ShippingMethod $shippingMethod)
+    private function getExtensionAttributes(ShippingMethod $shippingMethod)
     {
         $extension = $shippingMethod->getExtensionAttributes();
         if (!$extension) {
@@ -445,9 +440,31 @@ class Collector implements CollectorInterface
      * @return string|null
      * @throws LocalizedException
      */
-    protected function getBewustbezorgdLegs(CartItemInterface $quoteItem)
+    private function getBewustbezorgdLegs(CartItemInterface $quoteItem)
     {
-        return $quoteItem->getProduct()->getBewustbezorgdLegs() ?: $this->dataHelper->getDefaultBewustbezorgdLegs();
+        return $quoteItem->getProduct()->getBewustbezorgdLegs() ?: $this->getDefaultBewustbezorgdLegs();
+    }
+
+    /**
+     * Retrieves default value of attribute "bewustbezorgd_legs"
+     *
+     * @return string|null
+     * @throws LocalizedException
+     */
+    private function getDefaultBewustbezorgdLegs()
+    {
+        try {
+            /** @var Attribute $attribute */
+            $attribute = $this->eavConfig->getAttribute(
+                Product::ENTITY,
+                self::ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS
+            );
+        } catch (LocalizedException $exception) {
+            $this->logRepository->addDataLog($exception->getMessage(), 'Get Default Bewustbezorgd Legs');
+            return null;
+        }
+
+        return $attribute->getDefaultValue();
     }
 
     /**
@@ -456,11 +473,11 @@ class Collector implements CollectorInterface
      * @param CartItemInterface $quoteItem
      * @return float|int
      */
-    protected function getQuoteItemWeight(CartItemInterface $quoteItem)
+    private function getQuoteItemWeight(CartItemInterface $quoteItem)
     {
         $itemWeight = $quoteItem->getProduct()->getWeight() ?: $this->configModel->getDefaultWeight();
 
-        return $this->converter->convertWeightToGrams(
+        return $this->convertWeightToGrams(
             $itemWeight * $quoteItem->getQty(),
             $this->directoryHelper->getWeightUnit()
         );
@@ -472,14 +489,15 @@ class Collector implements CollectorInterface
      * @param CartItemInterface $quoteItem
      * @return float|int
      */
-    protected function getQuoteItemVolume(CartItemInterface $quoteItem)
+    private function getQuoteItemVolume(CartItemInterface $quoteItem)
     {
         $dimensionAttributes = $this->configModel->getConfigDimensionsAttributes();
-        if (($length = $quoteItem->getProduct()->getData($dimensionAttributes['attribute_length']))
-            && ($width = $quoteItem->getProduct()->getData($dimensionAttributes['attribute_width']))
-            && ($height = $quoteItem->getProduct()->getData($dimensionAttributes['attribute_height']))
+        $product = $quoteItem->getProduct();
+        if (($length = $product->getData($dimensionAttributes['attribute_length']))
+            && ($width = $product->getData($dimensionAttributes['attribute_width']))
+            && ($height = $product->getData($dimensionAttributes['attribute_height']))
         ) {
-            return $this->converter->convertVolumeToLiters(
+            return $this->convertVolumeToLiters(
                 $length * $width * $height * $quoteItem->getQty(),
                 $this->configModel->getDimensionsUnit()
             );
@@ -494,7 +512,7 @@ class Collector implements CollectorInterface
      * @param array $efficiencyItem
      * @return float|int
      */
-    protected function getEfficiencyEmission(array $efficiencyItem)
+    private function getEfficiencyEmission(array $efficiencyItem)
     {
         return $efficiencyItem['emission'];
     }
@@ -505,7 +523,7 @@ class Collector implements CollectorInterface
      * @param array $efficiency
      * @return array|bool
      */
-    protected function getMostEfficient(array $efficiency)
+    private function getMostEfficient(array $efficiency)
     {
         usort($efficiency, function ($a, $b) {
             return $this->getEfficiencyEmission($a) <=> $this->getEfficiencyEmission($b);
@@ -529,8 +547,11 @@ class Collector implements CollectorInterface
      * @param bool $breakWords
      * @return string
      */
-    protected function truncateString($value, $length = 4, $etc = '', &$remainder = '', $breakWords = true)
+    private function truncateString($value, $length = 4, $etc = '', &$remainder = '', $breakWords = true)
     {
+        if (!$value) {
+            $value = "";
+        }
         $value = trim($value);
         $this->truncateResult = $this->filterManager->truncateFilter(
             $value,
@@ -538,5 +559,29 @@ class Collector implements CollectorInterface
         );
 
         return $this->truncateResult->getValue();
+    }
+
+    /**
+     * Retrieves converted value from the requested unit to kilograms
+     *
+     * @param $value
+     * @param $unit
+     * @return float|int
+     */
+    private function convertWeightToGrams($value, $unit)
+    {
+        return $value * self::WEIGHT_CONVERT_MAP[$unit];
+    }
+
+    /**
+     * Retrieves converted value from the requested unit to liters
+     *
+     * @param $value
+     * @param $unit
+     * @return float|int
+     */
+    private function convertVolumeToLiters($value, $unit)
+    {
+        return $value * self::VOLUME_CONVERT_MAP[$unit];
     }
 }

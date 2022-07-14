@@ -3,17 +3,18 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Model\Data;
+namespace Thuiswinkel\BewustBezorgd\Model\ShippingEmission;
 
 use Magento\Framework\Api\AbstractExtensibleObject;
-use Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface;
-use Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionExtensionInterface;
+use Magento\Framework\Api\ExtensionAttributesInterface;
+use Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface;
 
 /**
  * Shipping Emission Data Model
  */
-class ShippingEmission extends AbstractExtensibleObject implements ShippingEmissionInterface
+class Data extends AbstractExtensibleObject implements DataInterface
 {
     /**
      * {@inheritDoc}
@@ -106,7 +107,7 @@ class ShippingEmission extends AbstractExtensibleObject implements ShippingEmiss
     /**
      * {@inheritDoc}
      */
-    public function setExtensionAttributes(ShippingEmissionExtensionInterface $extensionAttributes)
+    public function setExtensionAttributes(ExtensionAttributesInterface $extensionAttributes)
     {
         return $this->_setExtensionAttributes($extensionAttributes);
     }

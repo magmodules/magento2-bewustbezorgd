@@ -3,6 +3,7 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Block\Adminhtml\Config\Form\Field;
 
@@ -15,6 +16,13 @@ use Magento\Framework\DataObject;
  */
 class ServiceTypeMapping extends AbstractFieldArray
 {
+
+    private const RENDERER_DATA = [
+        'data' => [
+            'is_render_to_js_template' => true,
+            'class' => 'input-text required-entry validate-no-empty',
+        ],
+    ];
 
     /** @var AllowedMethods */
     private $allowedMethodRenderer;
@@ -81,12 +89,7 @@ class ServiceTypeMapping extends AbstractFieldArray
             $this->allowedMethodRenderer = $this->getLayout()->createBlock(
                 AllowedMethods::class,
                 '',
-                [
-                    'data' => [
-                        'is_render_to_js_template' => true,
-                        'class' => 'input-text required-entry validate-no-empty',
-                    ],
-                ]
+                self::RENDERER_DATA
             );
         }
 
@@ -105,12 +108,7 @@ class ServiceTypeMapping extends AbstractFieldArray
             $this->serviceTypeRenderer = $this->getLayout()->createBlock(
                 ServiceTypes::class,
                 '',
-                [
-                    'data' => [
-                        'is_render_to_js_template' => true,
-                        'class' => 'input-text required-entry validate-no-empty',
-                    ],
-                ]
+                self::RENDERER_DATA
             );
         }
 

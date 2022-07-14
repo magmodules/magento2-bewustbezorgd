@@ -8,6 +8,7 @@ namespace Thuiswinkel\BewustBezorgd\Model\Config\Source;
 
 use Magento\Framework\Data\OptionSourceInterface;
 use Magento\Shipping\Model\Carrier\CarrierInterface;
+use Magento\Shipping\Model\Config as ShippingConfig;
 use Thuiswinkel\BewustBezorgd\Helper\Data as DataHelper;
 
 /**
@@ -21,12 +22,15 @@ class AllowedMethod implements OptionSourceInterface
     /** @var array */
     private $options = [];
 
+    /** @var ShippingConfig */
+    private $shippingConfig;
+
     /**
-     * @param DataHelper $helper
+     * @param ShippingConfig $shippingConfig
      */
-    public function __construct(DataHelper $helper)
+    public function __construct(ShippingConfig $shippingConfig)
     {
-        $this->helper = $helper;
+        $this->shippingConfig = $shippingConfig;
     }
 
     /**
@@ -37,7 +41,7 @@ class AllowedMethod implements OptionSourceInterface
     public function toOptionArray()
     {
         if (!$this->options) {
-            $carriers = $this->helper->getCarriers();
+            $carriers = $this->shippingConfig->getAllCarriers();
             $options = [];
 
             /** @var CarrierInterface $carrierModel */

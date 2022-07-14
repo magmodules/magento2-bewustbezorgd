@@ -3,11 +3,12 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Plugin\Magento\Quote\Model\Quote;
 
 use Magento\Quote\Model\Quote\Config as OriginClass;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
 
 /**
  * Plugin for Magento\Quote\Model\Quote\Config

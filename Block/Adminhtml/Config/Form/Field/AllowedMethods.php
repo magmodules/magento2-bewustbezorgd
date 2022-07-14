@@ -3,6 +3,7 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Block\Adminhtml\Config\Form\Field;
 
@@ -25,8 +26,11 @@ class AllowedMethods extends Select
      * @param AllowedMethod $allowedMethod
      * @param array $data
      */
-    public function __construct(Context $context, AllowedMethod $allowedMethod, array $data = [])
-    {
+    public function __construct(
+        Context $context,
+        AllowedMethod $allowedMethod,
+        array $data = []
+    ) {
         parent::__construct($context, $data);
         $this->allowedMethod = $allowedMethod;
     }

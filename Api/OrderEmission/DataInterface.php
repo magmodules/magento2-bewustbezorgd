@@ -3,23 +3,24 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Api\Data;
+namespace Thuiswinkel\BewustBezorgd\Api\OrderEmission;
 
-use Magento\Framework\Api\ExtensibleDataInterface;
+use Magento\Framework\Api\ExtensionAttributesInterface;
 
 /**
- * Order Emission Interface
+ * Order Emission Data Interface
  */
-interface OrderEmissionInterface extends ExtensibleDataInterface
+interface DataInterface
 {
 
-    const ORDER_EMISSION_ID = 'order_emission_id';
-    const SERVICE_TYPE = 'service_type';
-    const ORDER_ID = 'order_id';
-    const METERS_DIESEL = 'meters_diesel';
-    const METERS_GASOLINE = 'meters_gasoline';
-    const EMISSION = 'emission';
+    public const ORDER_EMISSION_ID = 'order_emission_id';
+    public const SERVICE_TYPE = 'service_type';
+    public const ORDER_ID = 'order_id';
+    public const METERS_DIESEL = 'meters_diesel';
+    public const METERS_GASOLINE = 'meters_gasoline';
+    public const EMISSION = 'emission';
 
     /**
      * Get Order Emission ID
@@ -32,7 +33,7 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Order Emission ID
      *
      * @param string $orderEmissionId
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setOrderEmissionId($orderEmissionId);
 
@@ -47,26 +48,9 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Order ID
      *
      * @param string $orderId
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setOrderId($orderId);
-
-    /**
-     * Retrieves existing extension attributes object or create a new one.
-     *
-     * @return \Thuiswinkel\BewustBezorgd\Api\Data\OrderEmissionExtensionInterface|null
-     */
-    public function getExtensionAttributes();
-
-    /**
-     * Set an extension attributes object.
-     *
-     * @param \Thuiswinkel\BewustBezorgd\Api\Data\OrderEmissionExtensionInterface $extensionAttributes
-     * @return $this
-     */
-    public function setExtensionAttributes(
-        \Thuiswinkel\BewustBezorgd\Api\Data\OrderEmissionExtensionInterface $extensionAttributes
-    );
 
     /**
      * Get service_type
@@ -78,7 +62,7 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Service Type
      *
      * @param string $serviceType
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setServiceType($serviceType);
 
@@ -93,7 +77,7 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Emission
      *
      * @param string $emission
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setEmission($emission);
 
@@ -108,7 +92,7 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Meters Diesel
      *
      * @param string $metersDiesel
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setMetersDiesel($metersDiesel);
 
@@ -123,7 +107,7 @@ interface OrderEmissionInterface extends ExtensibleDataInterface
      * Set Meters Gasoline
      *
      * @param string $metersGasoline
-     * @return OrderEmissionInterface
+     * @return self
      */
     public function setMetersGasoline($metersGasoline);
 }

@@ -3,11 +3,10 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Ui\Component\Listing\Column;
 
-use Magento\Framework\View\Element\UiComponent\ContextInterface;
-use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
 
 /**
@@ -41,7 +40,10 @@ class Emission extends Column
      */
     protected function prepareItem(array $item)
     {
-        if (isset($item[$this->getData('name')]) && is_numeric($item[$this->getData('name')]) && $item[$this->getData('name')] > 0) {
+        if (isset($item[$this->getData('name')])
+            && is_numeric($item[$this->getData('name')])
+            && $item[$this->getData('name')] > 0
+        ) {
             return '<div style="text-align: center;">' . (int) $item[$this->getData('name')] . '</div>';
         }
 

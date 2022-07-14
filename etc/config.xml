@@ -9,7 +9,7 @@
     <default>
         <bewust_bezorgd>
             <general>
-                <version>v1.1.2</version>
+                <version>v1.2.0</version>
             </general>
             <api_settings>
                 <gateway_url>https://emission.azurewebsites.net</gateway_url>

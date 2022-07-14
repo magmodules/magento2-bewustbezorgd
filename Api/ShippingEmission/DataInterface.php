@@ -3,21 +3,20 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Api\Data;
-
-use Magento\Framework\Api\ExtensibleDataInterface;
+namespace Thuiswinkel\BewustBezorgd\Api\ShippingEmission;
 
 /**
- * Order Emission Interface
+ * Shipping Emission Interface
  */
-interface ShippingEmissionInterface extends ExtensibleDataInterface
+interface DataInterface
 {
-    const EMISSION = 'emission';
-    const METERS_DIESEL = 'meters_diesel';
-    const METERS_GASOLINE = 'meters_gasoline';
-    const MOST_EFFICIENT = 'most_efficient';
-    const EMISSION_LOGO = 'emission_logo';
+    public const EMISSION = 'emission';
+    public const METERS_DIESEL = 'meters_diesel';
+    public const METERS_GASOLINE = 'meters_gasoline';
+    public const MOST_EFFICIENT = 'most_efficient';
+    public const EMISSION_LOGO = 'emission_logo';
 
     /**
      * Get Emission
@@ -93,21 +92,4 @@ interface ShippingEmissionInterface extends ExtensibleDataInterface
      * @return self
      */
     public function setEmissionLogo($emissionLogo);
-
-    /**
-     * Retrieves existing extension attributes object or create a new one.
-     *
-     * @return \Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionExtensionInterface|null
-     */
-    public function getExtensionAttributes();
-
-    /**
-     * Set an extension attributes object.
-     *
-     * @param \Thuiswinkel\BewustBezorgd\Api\Data\OrderEmissionExtensionInterface $extensionAttributes
-     * @return $this
-     */
-    public function setExtensionAttributes(
-        \Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionExtensionInterface $extensionAttributes
-    );
 }

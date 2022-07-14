@@ -3,23 +3,22 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
-namespace Thuiswinkel\BewustBezorgd\Model;
+namespace Thuiswinkel\BewustBezorgd\Service;
 
-use Throwable;
-use Zend_Date;
-use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\HTTP\ClientInterface;
-use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
-use Magento\Framework\Filesystem;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
+use Throwable;
+use Thuiswinkel\BewustBezorgd\Api\Log\RepositoryInterface as LogRepository;
+use Magento\Framework\HTTP\Client\Curl;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
+use Thuiswinkel\BewustBezorgd\Model\Exception\ApiAuthenticationFailedException;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiConfigurationException;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiCredentialsException;
-use Thuiswinkel\BewustBezorgd\Model\Exception\ApiAuthenticationFailedException;
-use Thuiswinkel\BewustBezorgd\HTTP\Client\Curl;
-use Thuiswinkel\BewustBezorgd\Helper\Data as DataHelper;
+use Zend_Date;
 
 /**
  * Class ApiConnection
@@ -43,21 +42,21 @@ class ApiConnection
     private $availablePostEndpoints = [
         '/api/Account/Token',
         '/api/Account/Refresh',
-        '/api/bulk-emission-calculation/two-legs',
-        '/api/bulk-emission-calculation/three-legs'
+        '/api/emission-calculation/two-legs',
+        '/api/emission-calculation/three-legs'
     ];
 
     /** @var ClientInterface|Curl */
-    protected $curlClient;
+    private $curlClient;
 
     /** @var SessionManagerInterface */
-    protected $session;
+    private $session;
 
     /** @var SerializerInterface */
-    protected $serializer;
+    private $serializer;
 
     /** @var ConfigModel */
-    protected $configModel;
+    private $configModel;
 
     /** @var TimezoneInterface */
     private $timezone;
@@ -68,16 +67,16 @@ class ApiConnection
     /** @var string|null */
     private $bearerTokenExpiry = null;
 
-    /** @var Filesystem */
-    protected $filesystem;
-
-    protected $helper;
-
-    /** @var string|null */
-    protected $apiShopId = null;
+    /**
+     * @var LogRepository
+     */
+    private $logRepository;
 
     /** @var string|null */
-    protected $apiPassword = null;
+    private $apiShopId = null;
+
+    /** @var string|null */
+    private $apiPassword = null;
 
     /**
      * Constructor.
@@ -87,8 +86,7 @@ class ApiConnection
      * @param SerializerInterface $serializer
      * @param ConfigModel $configModel
      * @param TimezoneInterface $timezone
-     * @param Filesystem $filesystem
-     * @param DataHelper $helper
+     * @param LogRepository $logRepository
      */
     public function __construct(
         Curl $curlClient,
@@ -96,16 +94,14 @@ class ApiConnection
         SerializerInterface $serializer,
         ConfigModel $configModel,
         TimezoneInterface $timezone,
-        Filesystem $filesystem,
-        DataHelper $helper
+        LogRepository $logRepository
     ) {
         $this->curlClient = $curlClient;
         $this->session = $session;
         $this->serializer = $serializer;
         $this->configModel = $configModel;
         $this->timezone = $timezone;
-        $this->filesystem = $filesystem;
-        $this->helper = $helper;
+        $this->logRepository = $logRepository;
     }
 
     /**
@@ -136,77 +132,65 @@ class ApiConnection
     {
         try {
             $authEndpoint = $this->getApiEndpoint('/api/Account/Token');
-            $this->curlClient->setHeaders($this->headers);
-            $this->curlClient->addHeader('Content-Type', 'application/json');
-            $this->curlClient->post(
-                $authEndpoint,
-                $this->serializer->serialize([
+        } catch (WrongApiConfigurationException $exception) {
+            $this->logRepository->addApiLog($exception->getMessage());
+            throw $exception;
+        }
+        $this->curlClient->setHeaders($this->headers);
+        $this->curlClient->addHeader('Content-Type', 'application/json');
+        $this->curlClient->post(
+            $authEndpoint,
+            $this->serializer->serialize([
                     "id"        => $this->getApiShopId(),
                     "password"  => $this->getApiPassword()
                 ])
-            );
-            $response = $this->serializer->unserialize($this->curlClient->getBody());
+        );
+        $response = $this->serializer->unserialize($this->curlClient->getBody());
 
-            if (count($response['errors'])) {
-                if ($response['errors'][0]['code'] == 'C0006') {
-                    throw new WrongApiCredentialsException();
-                }
-                throw new ApiAuthenticationFailedException();
+        if (count($response['errors'])) {
+            if ($response['errors'][0]['code'] == 'C0006') {
+                $exception = new WrongApiCredentialsException();
+                $this->logRepository->addApiLog($exception->getMessage());
+                throw $exception;
             }
-            $accessToken = $response['accessToken'];
-            $accessTokenExpiry = $response['expireDateTimeAccesToken'];
-            $this->session->setData('thuiswinkel_bewustbezorgd_bearer_token', $accessToken);
-            $this->bearerToken = $accessToken;
-            $this->session->setData('thuiswinkel_bewustbezorgd_bearer_token_expiry', $accessTokenExpiry);
-            $this->bearerTokenExpiry = $accessTokenExpiry;
-
-            return $this->getBearerToken();
-        // @codingStandardsIgnoreStart
-        } catch (WrongApiConfigurationException $exception) {
-            $this->helper->log($exception);
-            throw $exception;
-        } catch (WrongApiCredentialsException $exception) {
-            $this->helper->log($exception);
-            throw $exception;
-        } catch (ApiAuthenticationFailedException $exception) {
-            $this->helper->log($exception);
-        } catch (Throwable $exception) {
-            $this->helper->log($exception);
+            $exception = new ApiAuthenticationFailedException();
+            $this->logRepository->addApiLog($exception->getMessage());
             throw $exception;
         }
-        // @codingStandardsIgnoreEnd
+        $accessToken = $response['accessToken'];
+        $accessTokenExpiry = $response['expireDateTimeAccesToken'];
+        $this->session->setData('thuiswinkel_bewustbezorgd_bearer_token', $accessToken);
+        $this->bearerToken = $accessToken;
+        $this->session->setData('thuiswinkel_bewustbezorgd_bearer_token_expiry', $accessTokenExpiry);
+        $this->bearerTokenExpiry = $accessTokenExpiry;
 
-        return false;
+        return $this->getBearerToken();
     }
 
     /**
      * Sends request to Api and retrieves responded data
      *
-     * @param $filePath
+     * @param $data
      * @param string $endpoint
      * @return string
      * @throws Throwable
      * @throws WrongApiConfigurationException
      * @throws WrongApiCredentialsException
      */
-    public function getBulkEmission($filePath, $endpoint = 'three-legs')
+    public function getEmission($data, $endpoint = 'three-legs')
     {
         if (!($bearerToken = $this->getBearerToken()) || $this->isBearerTokenExpired()) {
             $bearerToken = $this->auth();
         }
-        $bulkEndpoint = $this->getApiEndpoint('/api/bulk-emission-calculation/' . $endpoint);
-        $uploadedFile = $this->filesystem->getDirectoryRead(DirectoryList::VAR_DIR)
-            ->getAbsolutePath($filePath);
-        $postData = [
-            'uploadedFile'  => $uploadedFile
-        ];
-        $this->curlClient->setHeaders($this->headers);
+        $endpoint = $this->getApiEndpoint('/api/emission-calculation/' . $endpoint);
+        $query = '?';
+        foreach (reset($data) as $key => $val) {
+            $query .= str_replace(' ', '', $key) . "=" . $val . '&';
+        }
         $this->curlClient->addHeader('Authorization', 'Bearer ' . $bearerToken);
-        $this->curlClient->addHeader('Content-Type', 'multipart/form-data');
-        $this->curlClient->post($bulkEndpoint, $postData);
-        $this->helper->log($this->curlClient->getBody(), 'ResponseData');
-
-        return $this->curlClient->getBody();
+        $this->curlClient->get($endpoint . $query);
+        $this->logRepository->addDataLog($this->curlClient->getBody(), 'ResponseData');
+        return $this->serializer->unserialize($this->curlClient->getBody());
     }
 
     /**
