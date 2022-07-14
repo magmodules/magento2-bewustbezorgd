@@ -3,20 +3,20 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Plugin\Magento\Checkout\Model;
 
 use Magento\Checkout\Model\GuestPaymentInformationManagement as OriginClass;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Quote\Api\Data\PaymentInterface;
-use Magento\Quote\Api\Data\AddressInterface;
-use Magento\Sales\Api\OrderRepositoryInterface;
-use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Checkout\Model\Session;
-use Thuiswinkel\BewustBezorgd\Model\OrderEmissionFactory;
-use Thuiswinkel\BewustBezorgd\Model\OrderEmissionRepository;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
-use Thuiswinkel\BewustBezorgd\Helper\Data as DataHelper;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Quote\Api\Data\AddressInterface;
+use Magento\Quote\Api\Data\PaymentInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
+use Thuiswinkel\BewustBezorgd\Api\Log\RepositoryInterface as LogRepository;
+use Thuiswinkel\BewustBezorgd\Api\OrderEmission\RepositoryInterface as OrderEmissionRepository;
 
 /**
  * Plugin for Magento\Quote\Model\ShippingMethodManagement
@@ -24,25 +24,22 @@ use Thuiswinkel\BewustBezorgd\Helper\Data as DataHelper;
 class GuestPaymentInformationManagement
 {
     /** @var ConfigModel  */
-    protected $configModel;
+    private $configModel;
 
     /** @var OrderRepositoryInterface */
-    protected $orderRepository;
-
-    /** @var OrderEmissionFactory */
-    protected $orderEmissionFactory;
+    private $orderRepository;
 
     /** @var OrderEmissionRepository */
-    protected $orderEmissionRepository;
+    private $orderEmissionRepository;
 
     /** @var SerializerInterface */
-    protected $serializer;
+    private $serializer;
 
     /** @var Session */
-    protected $session;
+    private $session;
 
-    /** @var DataHelper */
-    private $dataHelper;
+    /** @var LogRepository */
+    private $logRepository;
 
     /**
      * Constructor
@@ -50,28 +47,25 @@ class GuestPaymentInformationManagement
      * PaymentInformationManagement constructor.
      * @param ConfigModel $configModel
      * @param OrderRepositoryInterface $orderRepository
-     * @param OrderEmissionFactory $orderEmissionFactory
      * @param OrderEmissionRepository $orderEmissionRepository
      * @param SerializerInterface $serializer
      * @param Session $session
-     * @param DataHelper $dataHelper
+     * @param LogRepository $logRepository
      */
     public function __construct(
         ConfigModel $configModel,
         OrderRepositoryInterface $orderRepository,
-        OrderEmissionFactory $orderEmissionFactory,
         OrderEmissionRepository $orderEmissionRepository,
         SerializerInterface $serializer,
         Session $session,
-        DataHelper $dataHelper
+        LogRepository $logRepository
     ) {
         $this->configModel = $configModel;
         $this->orderRepository = $orderRepository;
-        $this->orderEmissionFactory = $orderEmissionFactory;
         $this->orderEmissionRepository = $orderEmissionRepository;
         $this->serializer = $serializer;
         $this->session = $session;
-        $this->dataHelper = $dataHelper;
+        $this->logRepository = $logRepository;
     }
 
     /**
@@ -104,13 +98,13 @@ class GuestPaymentInformationManagement
         }
         $order = $this->orderRepository->get($result);
         $shippingMethod = $order->getShippingMethod();
+        $this->logRepository->addDataLog($emissionSessionData, 'SessionData for Guest');
         $emissionSessionData = $this->serializer->unserialize($emissionSessionData);
-        $this->dataHelper->log($emissionSessionData, 'SessionData for Guest');
 
         if (!isset($emissionSessionData[$shippingMethod])) {
             return $result;
         }
-        $orderEmission = $this->orderEmissionFactory->create();
+        $orderEmission = $this->orderEmissionRepository->create();
         $orderEmission->addData([
             'order_id'          => $result,
             'service_type'      => $emissionSessionData[$shippingMethod]['service_type'],
@@ -118,7 +112,7 @@ class GuestPaymentInformationManagement
             'meters_diesel'     => $emissionSessionData[$shippingMethod]['meters_diesel'],
             'meters_gasoline'   => $emissionSessionData[$shippingMethod]['meters_gasoline']
         ]);
-        $this->orderEmissionRepository->save($orderEmission->getDataModel());
+        $this->orderEmissionRepository->save($orderEmission);
 
         return $result;
     }

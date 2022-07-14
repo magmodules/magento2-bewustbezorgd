@@ -11,13 +11,13 @@ use Monolog\Logger;
 /**
  * ApiLogger
  */
-class Api extends Logger implements ApiLoggerInterface
+class Api extends Logger
 {
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function add($message)
     {
-        $this->addError($message . PHP_EOL . '--------------------' . PHP_EOL);
+        $this->error($message . PHP_EOL . '--------------------' . PHP_EOL);
     }
 }

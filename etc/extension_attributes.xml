@@ -7,10 +7,10 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Api/etc/extension_attributes.xsd">
     <extension_attributes for="Magento\Quote\Api\Data\ShippingMethodInterface">
-        <attribute code="emission" type="Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface[]" />
-        <attribute code="meters_diesel" type="Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface[]" />
-        <attribute code="meters_gasoline" type="Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface[]" />
-        <attribute code="most_efficient" type="Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface[]" />
-        <attribute code="emission_logo" type="Thuiswinkel\BewustBezorgd\Api\Data\ShippingEmissionInterface[]" />
+        <attribute code="emission" type="Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface[]" />
+        <attribute code="meters_diesel" type="Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface[]" />
+        <attribute code="meters_gasoline" type="Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface[]" />
+        <attribute code="most_efficient" type="Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface[]" />
+        <attribute code="emission_logo" type="Thuiswinkel\BewustBezorgd\Api\ShippingEmission\DataInterface[]" />
     </extension_attributes>
 </config>

@@ -3,13 +3,14 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Plugin\Magento\Framework\View\Element\UiComponent\DataProvider;
 
 use Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory as OriginClass;
 use Magento\Sales\Model\ResourceModel\Order\Grid\Collection as OrderGridCollection;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
-use Thuiswinkel\BewustBezorgd\Model\ResourceModel\OrderEmission as EmissionResourceModel;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
+use Thuiswinkel\BewustBezorgd\Model\OrderEmission\ResourceModel as EmissionResourceModel;
 
 /**
  * Plugin for Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory

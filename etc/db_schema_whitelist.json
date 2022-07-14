@@ -1,0 +1,16 @@
+{
+    "thuiswinkel_order_emission": {
+        "column": {
+            "order_emission_id": true,
+            "order_id": true,
+            "service_type": true,
+            "emission": true,
+            "meters_diesel": true,
+            "meters_gasoline": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "ORDER_EMISSION_ORDER_ID_SALES_ORDER_ENTITY_ID": true
+        }
+    }
+}

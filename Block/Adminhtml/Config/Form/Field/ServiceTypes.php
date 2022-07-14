@@ -3,6 +3,7 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Block\Adminhtml\Config\Form\Field;
 
@@ -23,8 +24,11 @@ class ServiceTypes extends Select
      * @param ServiceType $serviceType
      * @param array $data
      */
-    public function __construct(Context $context, ServiceType $serviceType, array $data = [])
-    {
+    public function __construct(
+        Context $context,
+        ServiceType $serviceType,
+        array $data = []
+    ) {
         parent::__construct($context, $data);
         $this->serviceType = $serviceType;
     }

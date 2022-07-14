@@ -1,10 +1,10 @@
 <?php
-
 /**
- * Adminhtml VAT ID validation block
- *
- * @author     Magento Core Team <core@magentocommerce.com>
+ * Copyright © Thuiswinkel.org. All rights reserved.
+ * See COPYING.txt for license details.
  */
+declare(strict_types=1);
+
 namespace Thuiswinkel\BewustBezorgd\Block\Adminhtml\System\Config;
 
 use Magento\Config\Block\System\Config\Form\Field;
@@ -17,21 +17,21 @@ class ValidatePermissions extends Field
      *
      * @var string
      */
-    protected $_apiShopId = 'bewust_bezorgd_api_settings_api_shopid';
+    private $_apiShopId = 'bewust_bezorgd_api_settings_api_shopid';
 
     /**
      * API-Password Field Name
      *
      * @var string
      */
-    protected $_apiPassword = 'bewust_bezorgd_api_settings_api_password';
+    private $_apiPassword = 'bewust_bezorgd_api_settings_api_password';
 
     /**
      * Validate VAT Button Label
      *
      * @var string
      */
-    protected $_buttonLabel = 'Check Permissions';
+    private $_buttonLabel = 'Check Permissions';
 
     /**
      * Set API-ShopID Field Name

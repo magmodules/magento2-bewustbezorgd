@@ -1,13 +1,17 @@
 <?php
+/**
+ * Copyright © Thuiswinkel.org. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Controller\Adminhtml\System\Config\ApiPermissions;
 
-use Throwable;
 use Magento\Backend\App\Action;
-use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\Result\Json as ResultJson;
-use Thuiswinkel\BewustBezorgd\Model\ApiConnection;
-use Thuiswinkel\BewustBezorgd\Model\Exception\ApiAuthenticationFailedException;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Throwable;
+use Thuiswinkel\BewustBezorgd\Service\ApiConnection;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiConfigurationException;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiCredentialsException;
 
@@ -73,8 +77,6 @@ class Validate extends Action
         } catch (WrongApiConfigurationException $exception) {
             $result['message'] = $exception->getMessage();
         } catch (WrongApiCredentialsException $exception) {
-            $result['message'] = $exception->getMessage();
-        } catch (ApiAuthenticationFailedException $exception) {
             $result['message'] = $exception->getMessage();
         } catch (Throwable $exception) {
             $result['message'] = $exception->getMessage();

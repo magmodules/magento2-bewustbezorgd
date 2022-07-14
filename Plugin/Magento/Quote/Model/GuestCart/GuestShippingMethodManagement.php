@@ -3,16 +3,17 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Plugin\Magento\Quote\Model\GuestCart;
 
-use Magento\Quote\Model\Cart\ShippingMethod;
-use Magento\Quote\Model\GuestCart\GuestShippingMethodManagement as OriginClass;
-use Magento\Quote\Model\GuestCart\GuestCartRepository;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Quote\Model\Cart\ShippingMethod;
+use Magento\Quote\Model\GuestCart\GuestCartRepository;
+use Magento\Quote\Model\GuestCart\GuestShippingMethodManagement as OriginClass;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiConfigurationException;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
 use Thuiswinkel\BewustBezorgd\Plugin\Magento\Quote\Model\ShippingMethodManagement as ShippingMethodManagementPlugin;
 
 /**

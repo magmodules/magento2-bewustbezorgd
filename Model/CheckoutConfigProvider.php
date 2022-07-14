@@ -3,11 +3,13 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Model;
 
 use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Framework\View\Asset\Repository as AssetRepository;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as Config;
 
 class CheckoutConfigProvider implements ConfigProviderInterface
 {
@@ -34,7 +36,7 @@ class CheckoutConfigProvider implements ConfigProviderInterface
      */
     public function getConfig()
     {
-        $config = [
+        return [
             'thuiswinkelBewustBezorgd' => [
                 'shippingMethods' => [
                     'emission_logo_url_svg' => $this->assetRepo
@@ -45,7 +47,5 @@ class CheckoutConfigProvider implements ConfigProviderInterface
                 ]
             ]
         ];
-
-        return $config;
     }
 }

@@ -3,6 +3,7 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Model\Product\Attribute\Source;
 
@@ -16,8 +17,8 @@ class BewustbezorgdLegs extends AbstractSource
     /**#@+
      * Constants
      */
-    const TWO_LEGS_OPTION_ID = 1;
-    const THREE_LEGS_OPTION_ID = 2;
+    public const TWO_LEGS_OPTION_ID = 1;
+    public const THREE_LEGS_OPTION_ID = 2;
     /**#@-*/
 
     /**
@@ -37,12 +38,13 @@ class BewustbezorgdLegs extends AbstractSource
      */
     public function getAllOptions()
     {
-        $this->_options = [
-            ['value' => '', 'label' => __('-- Please select --')],
-            ['value' => self::TWO_LEGS_OPTION_ID, 'label' => __('2 man delivery | big package')],
-            ['value' => self::THREE_LEGS_OPTION_ID, 'label' => __('Regular Package')]
-        ];
-
+        if (!$this->_options) {
+            $this->_options = [
+                ['value' => '', 'label' => __('-- Please select --')],
+                ['value' => self::TWO_LEGS_OPTION_ID, 'label' => __('2 man delivery | big package')],
+                ['value' => self::THREE_LEGS_OPTION_ID, 'label' => __('Regular Package')]
+            ];
+        }
         return $this->_options;
     }
 

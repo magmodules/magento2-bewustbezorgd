@@ -11,17 +11,17 @@ use Monolog\Logger;
 /**
  * DataLogger
  */
-class Data extends Logger implements DataLoggerInterface
+class Data extends Logger
 {
     /**
-     * {@inheritDoc}
+     * @inheritDoc
      */
     public function add($type, $data)
     {
         if (is_array($data) || is_object($data)) {
-            $this->addInfo($type . ':' . PHP_EOL . json_encode($data) . PHP_EOL . '--------------------' . PHP_EOL);
+            $this->info($type . ':' . PHP_EOL . json_encode($data) . PHP_EOL . '--------------------' . PHP_EOL);
         } else {
-            $this->addInfo($type . ':' . PHP_EOL . $data . PHP_EOL . '--------------------' . PHP_EOL);
+            $this->info($type . ':' . PHP_EOL . $data . PHP_EOL . '--------------------' . PHP_EOL);
         }
     }
 }

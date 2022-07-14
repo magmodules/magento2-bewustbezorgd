@@ -3,20 +3,21 @@
  * Copyright © Thuiswinkel.org. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Thuiswinkel\BewustBezorgd\Plugin\Magento\Quote\Model;
 
-use Magento\Quote\Model\Cart\ShippingMethod;
-use Magento\Quote\Model\ShippingMethodManagement as OriginClass;
+use Magento\Customer\Api\AddressRepositoryInterface;
+use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\CartInterface;
-use Magento\Customer\Api\AddressRepositoryInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\FileSystemException;
-use Thuiswinkel\BewustBezorgd\Model\Emission\CollectorInterface;
-use Thuiswinkel\BewustBezorgd\Model\Config as ConfigModel;
+use Magento\Quote\Model\Cart\ShippingMethod;
+use Magento\Quote\Model\ShippingMethodManagement as OriginClass;
+use Thuiswinkel\BewustBezorgd\Api\Config\RepositoryInterface as ConfigModel;
 use Thuiswinkel\BewustBezorgd\Model\Exception\WrongApiConfigurationException;
+use Thuiswinkel\BewustBezorgd\Service\CollectEmission;
 
 /**
  * Plugin for Magento\Quote\Model\ShippingMethodManagement
@@ -36,7 +37,7 @@ class ShippingMethodManagement
      */
     protected $addressRepository;
 
-    /** @var CollectorInterface */
+    /** @var CollectEmission */
     protected $emissionCollector;
 
     /**
@@ -45,13 +46,13 @@ class ShippingMethodManagement
      * @param CartRepositoryInterface $quoteRepository
      * @param ConfigModel $configModel
      * @param AddressRepositoryInterface $addressRepository
-     * @param CollectorInterface $emissionCollector
+     * @param CollectEmission $emissionCollector
      */
     public function __construct(
         CartRepositoryInterface $quoteRepository,
         ConfigModel $configModel,
         AddressRepositoryInterface $addressRepository,
-        CollectorInterface $emissionCollector
+        CollectEmission $emissionCollector
     ) {
         $this->quoteRepository = $quoteRepository;
         $this->configModel = $configModel;
@@ -70,7 +71,7 @@ class ShippingMethodManagement
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
-    public function afterEstimateByExtendedAddress(OriginClass $subject, $result, $cartId, $address)
+    public function afterEstimateByExtendedAddress(OriginClass $subject, $result, $cartId, $address): array
     {
         // no change result if module is disabled
         if (!$this->configModel->isEnabled()) {
@@ -97,7 +98,7 @@ class ShippingMethodManagement
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
-    public function afterEstimateByAddressId(OriginClass $subject, $result, $cartId, $addressId)
+    public function afterEstimateByAddressId(OriginClass $subject, $result, $cartId, $addressId): array
     {
         $quote = $this->quoteRepository->getActive($cartId);
 
@@ -121,13 +122,11 @@ class ShippingMethodManagement
      * @throws FileSystemException
      * @throws WrongApiConfigurationException
      */
-    public function afterEstimateProcess(array $result, CartInterface $quote, $address)
+    public function afterEstimateProcess(array $result, CartInterface $quote, $address): array
     {
         // Check if country in address is allowed
-        if (!in_array($address->getCountryId(), explode(',', $this->configModel->getAllowedCountries()))) {
-            return $result;
-        }
-        $this->emissionCollector->collect($quote, $address, $result);
+
+        $this->emissionCollector->execute($quote, $address, $result);
 
         return $result;
     }
