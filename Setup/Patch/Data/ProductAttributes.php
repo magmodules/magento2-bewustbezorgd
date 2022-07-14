@@ -4,26 +4,34 @@
  * See COPYING.txt for license details.
  */
 
-namespace Thuiswinkel\BewustBezorgd\Setup;
+namespace Thuiswinkel\BewustBezorgd\Setup\Patch\Data;
 
-use Zend_Validate_Exception;
+use Magento\Bundle\Model\Product\Type as BundleProductTypeModel;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type as CatalogProductTypeModel;
-use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedProductTypeModel;
-use Magento\Bundle\Model\Product\Type as BundleProductTypeModel;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableProductTypeModel;
 use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
-use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Setup\ModuleDataSetupInterface;
+use Magento\Framework\Setup\Patch\DataPatchInterface;
+use Magento\Framework\Setup\Patch\PatchRevertableInterface;
+use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedProductTypeModel;
 use Thuiswinkel\BewustBezorgd\Model\Product\Attribute\Source\BewustbezorgdLegs;
+use Zend_Validate_Exception;
 
 /**
- * Data setup for use during installation / upgrade
+ * Add Product Attributes
  */
-class SetupData
+class ProductAttributes implements DataPatchInterface, PatchRevertableInterface
 {
-    const ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS = 'bewustbezorgd_legs';
+
+    public const ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS = 'bewustbezorgd_legs';
+
+    /**
+     * @var ModuleDataSetupInterface
+     */
+    private $moduleDataSetup;
 
     /**
      * @var EavSetupFactory
@@ -31,23 +39,72 @@ class SetupData
     private $eavSetupFactory;
 
     /**
-     * SetupData constructor.
-     *
+     * ProductAttributes constructor.
      * @param EavSetupFactory $eavSetupFactory
+     * @param ModuleDataSetupInterface $moduleDataSetup
      */
-    public function __construct(EavSetupFactory $eavSetupFactory)
-    {
+    public function __construct(
+        EavSetupFactory $eavSetupFactory,
+        ModuleDataSetupInterface $moduleDataSetup
+    ) {
         $this->eavSetupFactory = $eavSetupFactory;
+        $this->moduleDataSetup = $moduleDataSetup;
+    }
+
+    /**
+     * @return DataPatchInterface|void
+     * @throws LocalizedException
+     * @throws Zend_Validate_Exception
+     */
+    public function apply()
+    {
+        $this->moduleDataSetup->getConnection()->startSetup();
+        /** @var EavSetup $eavSetup */
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
+        if (!$eavSetup->getAttributeId(Product::ENTITY, self::ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS)) {
+            $this->addBewustbezorgdLegsAttribute();
+        }
+        $this->moduleDataSetup->getConnection()->endSetup();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getDependencies()
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAliases()
+    {
+        return [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function revert()
+    {
+        /** @var EavSetup $eavSetup */
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
+        if ($eavSetup->getAttributeId(Product::ENTITY, self::ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS)) {
+            $eavSetup->removeAttribute(
+                Product::ENTITY,
+                self::ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS
+            );
+        }
     }
 
     /**
      * Add bewustbezorgd_legs attributes.
      *
-     * @param ModuleDataSetupInterface $setup
      * @throws LocalizedException
      * @throws Zend_Validate_Exception
      */
-    public function addBewustbezorgdLegsAttribute(ModuleDataSetupInterface $setup)
+    public function addBewustbezorgdLegsAttribute()
     {
         $applyTo = implode(',', [
             CatalogProductTypeModel::TYPE_SIMPLE,
@@ -56,8 +113,7 @@ class SetupData
             ConfigurableProductTypeModel::TYPE_CODE
         ]);
         /** @var EavSetup $eavSetup */
-        $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
-
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
         $eavSetup->addAttribute(Product::ENTITY, self::ATTRIBUTE_CODE_BEWUSTBEZORGD_LEGS, [
             'type' => 'int',
             'label' => 'Bewustbezorgd Legs',
